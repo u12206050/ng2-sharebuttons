@@ -13,6 +13,15 @@ import {
 import {ShareButton, ShareArgs} from "../../helpers/share-buttons.class";
 import {ShareButtonsService} from "../../service/share-buttons.service";
 
+/* Used purely to satisfy typescript compiling */
+interface Window {
+  open: any;
+  location: any;
+}
+interface Global {
+  url: string;
+}
+
 @Component({
     selector: 'share-button',
     template: '<button  #btn (click)="share()"></button>',
@@ -40,6 +49,14 @@ export class ShareButtonComponent implements AfterViewInit {
                 private renderer: Renderer,
                 private elementRef: ElementRef) {
     }
+    
+    private getUrl() {
+        if (typeof window != 'undefined')
+            return window.location.href;
+        if (typeof global != 'undefined')
+            return global.url;
+        return '';
+    }
 
     ngAfterViewInit() {
         /** If URL is not presented then set the current URL    */
@@ -48,11 +65,11 @@ export class ShareButtonComponent implements AfterViewInit {
             let r = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
             if (!r.test(this.url)) {
                 console.warn('ShareButtons: Invalid URL, switching to window.location.href');
-                this.url = typeof window != 'undefined' ? window.location.href : typeof global != 'undefined' ? (<any>global).url : '';
+                this.url = this.getUrl();
             }
         }
         else {
-            this.url = typeof window != 'undefined' ? window.location.href : typeof global != 'undefined' ? (<any>global).url : '';
+            this.url = this.getUrl();
         }
         this.renderer.setElementProperty(this.btn.nativeElement, 'innerHTML', this.button.template);
         this.renderer.setElementClass(this.btn.nativeElement, this.button.classes, true);
@@ -70,12 +87,13 @@ export class ShareButtonComponent implements AfterViewInit {
                 });
         }
     }
-
+    
 
     /** Open share window */
     share() {
         let shareArgs = new ShareArgs(this.url, this.title, this.description, this.image, this.tags);
-        window.open(this.sbService.share(this.button.provider, shareArgs), 'newwindow', this.sbService.windowAttr());
+        if (typeof window != 'undefined')
+            window.open(this.sbService.share(this.button.provider, shareArgs), 'newwindow', this.sbService.windowAttr());
     }
 
 
